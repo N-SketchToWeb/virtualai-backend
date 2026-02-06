@@ -1,10 +1,19 @@
+package com.nandita.virtualai_backend.controller;
+
+import com.nandita.virtualai_backend.service.AIService;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
+
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "*") // Allow Render frontend
+@CrossOrigin(origins = "*")
 public class AIController {
 
-    @Autowired
-    private AIService aiService;
+    private final AIService aiService;
+
+    public AIController(AIService aiService) {
+        this.aiService = aiService;
+    }
 
     @PostMapping("/response")
     public Mono<String> getResponse(@RequestBody PromptRequest request) {
