@@ -1,4 +1,4 @@
-package com.nandita.virtualai;
+package com.nandita.virtualai_backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
