@@ -11,7 +11,7 @@ import java.util.*;
 @Service
 public class AIService {
 
-    @Value("${gemini.api.key}")
+    @Value("${GEMINI_API_KEY}")
     private String apiKey;
 
     private final WebClient webClient;
@@ -24,47 +24,46 @@ public class AIService {
     }
 
     public Mono<String> getAIResponse(String prompt) {
+
+        if (prompt == null || prompt.isBlank()) {
+            return Mono.just("Prompt is empty.");
+        }
+
         try {
-            // Validate prompt
-            if (prompt == null || prompt.isBlank()) {
-                return Mono.just("Prompt is empty.");
-            }
-
-            // Build payload
+            // Gemini request body (CORRECT FORMAT)
             Map<String, Object> payload = new HashMap<>();
-            payload.put("model", "gemini-2.0-flash");
-            payload.put("temperature", 0.7);
-            payload.put("maxOutputTokens", 256);
 
-            Map<String, Object> promptItem = new HashMap<>();
-            promptItem.put("type", "text");
-            promptItem.put("content", prompt);
+            Map<String, Object> textPart = new HashMap<>();
+            textPart.put("text", prompt);
 
-            payload.put("prompt", Collections.singletonList(promptItem));
+            Map<String, Object> content = new HashMap<>();
+            content.put("parts", List.of(textPart));
 
-            String jsonPayload = mapper.writeValueAsString(payload);
-            System.out.println("Sending payload to Gemini: " + jsonPayload);
+            payload.put("contents", List.of(content));
 
-            // Call Gemini API
             return webClient.post()
-                    .uri("/models/gemini-2.0-flash:generateText?key=" + apiKey)
+                    .uri("/models/gemini-2.0-flash:generateContent")
                     .header("Content-Type", "application/json")
-                    .bodyValue(jsonPayload)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .bodyValue(payload)
                     .retrieve()
                     .bodyToMono(String.class)
                     .map(response -> {
                         try {
                             Map<?, ?> map = mapper.readValue(response, Map.class);
                             List<?> candidates = (List<?>) map.get("candidates");
+
                             if (candidates != null && !candidates.isEmpty()) {
                                 Map<?, ?> first = (Map<?, ?>) candidates.get(0);
-                                List<?> output = (List<?>) first.get("output");
-                                if (output != null && !output.isEmpty()) {
-                                    Map<?, ?> out0 = (Map<?, ?>) output.get(0);
-                                    return out0.get("content").toString();
+                                Map<?, ?> contentMap = (Map<?, ?>) first.get("content");
+                                List<?> parts = (List<?>) contentMap.get("parts");
+
+                                if (parts != null && !parts.isEmpty()) {
+                                    Map<?, ?> part = (Map<?, ?>) parts.get(0);
+                                    return part.get("text").toString();
                                 }
                             }
-                            return "No output from AI.";
+                            return "No AI response.";
                         } catch (Exception e) {
                             e.printStackTrace();
                             return "Error parsing AI response.";
@@ -72,12 +71,11 @@ public class AIService {
                     })
                     .onErrorResume(err -> {
                         err.printStackTrace();
-                        return Mono.just("Failed to call AI: " + err.getMessage());
+                        return Mono.just("AI service error: " + err.getMessage());
                     });
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return Mono.just("Error building AI request: " + e.getMessage());
+            return Mono.just("Failed to build AI request.");
         }
     }
 }

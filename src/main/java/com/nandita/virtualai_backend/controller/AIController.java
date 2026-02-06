@@ -1,13 +1,6 @@
-package com.nandita.virtualai.controller;
-
-import com.nandita.virtualai.service.AIService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
-
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "http://localhost:5173") // React frontend URL
+@CrossOrigin(origins = "*") // Allow Render frontend
 public class AIController {
 
     @Autowired
@@ -18,7 +11,6 @@ public class AIController {
         return aiService.getAIResponse(request.getPrompt());
     }
 
-    // Request body class
     public static class PromptRequest {
         private String prompt;
 
