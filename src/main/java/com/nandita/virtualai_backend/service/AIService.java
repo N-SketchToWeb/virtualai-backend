@@ -1,6 +1,5 @@
 package com.nandita.virtualai_backend.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -11,9 +10,7 @@ import java.util.Map;
 @Service
 public class AIService {
 
-    @Value("${gemini.api.key}")
-    private String apiKey;
-
+    private final String apiKey = System.getenv("GEMINI_API_KEY");
     private final WebClient webClient;
 
     public AIService(WebClient.Builder builder) {
@@ -28,7 +25,7 @@ public class AIService {
             return Mono.just("Prompt is empty.");
         }
 
-        Map<String, Object> body = Map.of(
+        Map<String, Object> payload = Map.of(
                 "contents", List.of(
                         Map.of(
                                 "parts", List.of(
@@ -39,13 +36,8 @@ public class AIService {
         );
 
         return webClient.post()
-                .uri(uriBuilder ->
-                        uriBuilder
-                                .path("/models/gemini-2.0-flash:generateContent")
-                                .queryParam("key", apiKey)
-                                .build()
-                )
-                .bodyValue(body)
+                .uri("/models/gemini-2.0-flash:generateContent?key=" + apiKey)
+                .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(String.class)
                 .onErrorResume(e ->
